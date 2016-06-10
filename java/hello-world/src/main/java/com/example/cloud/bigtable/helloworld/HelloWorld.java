@@ -35,6 +35,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * A minimal application that connects to Cloud Bigtable using the native HBase API
@@ -74,9 +75,12 @@ public class HelloWorld {
 
       // Write some rows to the table
       print("Write some greetings to the table");
+      String rowKey = "";
       for (int i = 0; i < GREETINGS.length; i++) {
-        // Each row has a unique row key
-        String rowKey = "greeting" + i;
+        // Each row has a unique row key. Use a random key to distribute writes
+        // more evenly across shards.
+        // See: https://cloud.google.com/bigtable/docs/schema-design
+        rowKey = UUID.randomUUID().toString();
 
         // Put a single row into the table. We could also pass a list of Puts to write a batch.
         Put put = new Put(Bytes.toBytes(rowKey));
@@ -84,12 +88,12 @@ public class HelloWorld {
         table.put(put);
       }
 
-      // Get the first greeting by row key
-      String rowKey = "greeting0";
+      // Get a greeting by row key
+      // String rowKey = ...;
       Result getResult = table.get(new Get(Bytes.toBytes(rowKey)));
       String greeting = Bytes.toString(getResult.getValue(COLUMN_FAMILY_NAME, COLUMN_NAME));
-      System.out.println(
-          String.format("Get a single greeting by row key: %s = %s", rowKey, greeting));
+      System.out.println("Get a single greeting by row key");
+      System.out.printf("\t%s = %s\n", rowKey, greeting);
 
       // Now scan across all rows.
       Scan scan = new Scan();
